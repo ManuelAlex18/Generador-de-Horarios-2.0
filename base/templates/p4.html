@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="generator"
+          content="PhpSpreadsheet, https://github.com/PHPOffice/PhpSpreadsheet">
+    <meta name="author" content="Leo" />
+    <style type="text/css">
+      html { font-family:Calibri, Arial, Helvetica, sans-serif; font-size:11pt; background-color:white }
+      a.comment-indicator:hover + div.comment { background:#ffd; position:absolute; display:block; border:1px solid black; padding:0.5em }
+      a.comment-indicator { background:red; display:inline-block; border:1px solid black; width:0.5em; height:0.5em }
+      div.comment { display:none }
+      table { border-collapse:collapse; page-break-after:always;}
+      .gridlines td { border:1px dotted black }
+      .gridlines th { border:1px dotted black }
+      .s { text-align:left }
+      td.image { vertical-align:bottom; text-align:center; border-bottom:none #000000; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Calibri'; font-size:11pt; background-color:white }
+      td.p4-title { vertical-align:middle; text-align:center; border-bottom:none #000000; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Arial'; font-size:55pt; background-color:white;padding:0;margin:0;font-size:40pt; font-stretch: ultra-condensed; }
+      td.blank { vertical-align:bottom; border-bottom:none #000000; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Arial'; font-size:11pt; background-color:white }
+      td.text-left-middle-blank { vertical-align:middle; text-align:left; padding-left:0px; border-bottom:none #000000; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Arial'; font-size:11pt; background-color:white }
+      td.day { vertical-align:bottom; text-align:center; border-bottom:1px solid #000000 !important; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Arial'; font-size:11pt; background-color:white }
+      td.classtime { vertical-align:middle; text-align: center;border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:7pt; background-color:white; text-overflow: clip; min-width: 38px; max-width: 38px; height: 22px;}
+      td.classtime-week-end { border-right: 4px solid white !important; }
+      td.day-not-available { vertical-align:middle; text-align: center;border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:7pt; background-color:white; text-overflow: clip;}
+      td.day-not-available > p {transform: rotate(-90deg);-webkit-transform: rotate(-90deg);-o-transform: rotate(-90deg); margin: 0;padding: 0;}
+      td.week-not-available { vertical-align:middle; text-align: center;border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:7pt; background-color:white; text-overflow: clip;}
+      td.week-not-available > p {transform: rotate(-45deg);-webkit-transform: rotate(-45deg);-o-transform: rotate(-45deg); margin: 0;padding: 0;}
+      td.symbology { vertical-align:bottom; text-align:left; padding-left:0px; border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:11pt; background-color:white }
+      td.group-symbology { vertical-align:middle; text-align:center; padding-left:0px; border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:11pt; background-color:white }
+      td.title-center { vertical-align:bottom; text-align:center; border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:11pt; background-color:white }
+      td.group-name { vertical-align:bottom; text-align:center; border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:11pt; font-weight: 600 ;background-color:white }
+      td.text-left-blank { vertical-align:middle; text-align:left; padding-left:0px; border-bottom:none #000000; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Arial'; font-size:11pt; background-color:white }
+      td.dates { vertical-align:bottom; text-align:center; border-bottom:1px solid #000000 !important; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Arial'; font-size:7.5pt; background-color:white }
+      td.dates > p {display: inline;font-weight: 600;font-size: 8.5pt;}
+      td.title { vertical-align:bottom; text-align:center; border-bottom:1px solid #000000 !important; border-top:none #000000; border-left:none #000000; border-right:none #000000; color:#000000; font-family:'Arial'; font-size:9pt; background-color:white }
+      td.text-left { vertical-align:middle; text-align:left; border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:9pt; background-color:white }
+      td.text-center { vertical-align:middle; text-align:center; border-bottom:1px solid #000000 !important; border-top:1px solid #000000 !important; border-left:1px solid #000000 !important; border-right:1px solid #000000 !important; color:#000000; font-family:'Arial'; font-size:9pt; background-color:white }
+      table.sheet0 col.col { width:32pt }
+      table.sheet0 col.col-divider { width:4.06666662pt }
+      table.sheet0 tr { height:15pt }
+      table.sheet0 tr.row-divider { height:6pt }
+    </style>
+  </head>
+  <body>
+    <style>
+@page {size: Letter landscape; }
+body { margin-left: 0.1in; margin-right: 0.1in; margin-top: 0in; margin-bottom: 0in; align-items: center;}
+    </style>
+    <div style="display: flex; flex-direction: row; gap: 40px; flex-wrap: wrap; align-items: flex-start;">
+    {% for block in blocks %}
+      <div style="display: inline-block; margin-bottom: 30px; margin-right: 40px; vertical-align: top;">
+        <table border="0" cellpadding="0" cellspacing="0" id="sheet0" class="sheet0 gridlines">
+          <tbody>
+            <!-- Cabecera: logo y datos generales (solo en el primer bloque) -->
+            {% if block.is_first %}
+            <tr>
+              <td colspan="6" rowspan="4" class="image null">
+                <img width="70%" height="35%" src="http://localhost:8000/static/img/img.jpg" />
+              </td>
+              <td colspan="{{ block.weeks_cols }}" class="p4-title">P-4</td>
+            </tr>
+            <tr>
+              <td colspan="{{ block.weeks_cols }}" class="text-left-middle-blank s">Actualizado el {{ schedule.updated }}</td>
+            </tr>
+            <tr>
+              <td colspan="{{ block.weeks_cols }}" class="text-left-middle-blank s">Periodo: {{ schedule.period }}</td>
+            </tr>
+            <tr>
+              <td colspan="{{ block.weeks_cols }}" class="text-left-middle-blank s">Carrera: {{ schedule.career }} | Curso: {{ schedule.course }} | Año: {{ schedule.year }}</td>
+            </tr>
+            {% endif %}
+            <!-- Cabecera de semanas: número y rango de fechas -->
+            <tr>
+              {% for week in block.dates_by_row %}
+                <td class="dates null" colspan="5" style="border-bottom: none;">
+                  <p>Semana {{ week.weekNum }}</p>
+                </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              {% for week in block.dates_by_row %}
+                <td class="dates null" colspan="5" style="border-top: none;">
+                  {{ week.start }} - {{ week.end }}
+                </td>
+              {% endfor %}
+            </tr>
+            <!-- Cabecera de días de la semana -->
+            <tr>
+              {% for week in block.dates_by_row %}
+                <td class="day s">L</td>
+                <td class="day s">M</td>
+                <td class="day s">M</td>
+                <td class="day s">J</td>
+                <td class="day s">V</td>
+              {% endfor %}
+            </tr>
+            <!-- Filas de turnos (cada fila es un turno, cada bloque de 5 columnas es una semana) -->
+            {% for fila in block.turnos_grid %}
+            <tr>
+              {% for celda in fila %}
+                <td class="classtime null {% if forloop.counter|divisibleby:5 %}classtime-week-end{% endif %}" style="min-width: 38px; max-width: 38px; height: 22px; text-align: center; vertical-align: middle;">{% if celda.type == 'turno' %}{{ celda.subject_symb }}{% endif %}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+            <!-- Fila divisoria después de cada turno de la mañana (opcional) -->
+            {% if forloop.counter == last_shift_in_the_morning %}
+            <tr class="row-divider">
+              {% for week in block.dates_by_row %}
+                {% if not forloop.first %}<td class="blank null"></td>{% endif %}
+                <td class="blank null"></td><td class="blank null"></td><td class="blank null"></td><td class="blank null"></td><td class="blank null"></td><td class="blank null"></td>
+              {% endfor %}
+            </tr>
+            {% endif %}
+            <!-- Leyenda de asignaturas y profesores (solo en el último bloque) -->
+            {% if block.is_last %}
+            <tr><td colspan="{{ block.weeks_cols }}" class="blank null"></td></tr>
+            <tr>
+              <td class="symbology s" colspan="2">SIMB</td>
+              <td class="title-center s" colspan="8">ASIGNATURA</td>
+              <td class="title-center s" colspan="8">PROFESOR</td>
+              <td class="blank null" colspan="{{ block.weeks_cols|add:-18 }}"></td>
+            </tr>
+            {% for subj in subjects_activities %}
+              <tr>
+                <td class="symbology null" colspan="2">{{ subj.subject_symb }}</td>
+                <td class="text-left null" colspan="8">{{ subj.subject_name }}</td>
+                <td class="text-left null" colspan="8">{{ subj.teacher_name }}</td>
+                <td class="blank null" colspan="{{ block.weeks_cols|add:-18 }}"></td>
+              </tr>
+            {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    {% endfor %}
+    </div>
+    <!-- Fin de bloques -->
+  </body>
+</html>
