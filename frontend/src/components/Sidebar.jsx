@@ -44,7 +44,7 @@ export function Sidebar({ isOpen, onClose }) {
     },
     {
       title: "Período",
-      href: "/period-form",
+      href: "/periodos",
       icon: Clock,
       show: hasRole,
     },

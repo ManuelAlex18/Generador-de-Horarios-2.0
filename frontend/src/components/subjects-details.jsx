@@ -206,7 +206,7 @@ export function SubjectsDetails() {
         </h1>
         <Button
           className="bg-green-600 hover:bg-green-700"
-          onClick={() => navigate("/subjects-create")}
+          onClick={() => navigate("/asignaturas")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

@@ -71,7 +71,7 @@ export function TeachersDetails() {
         </h1>
         <Button
           className="bg-green-600 hover:bg-green-700"
-          onClick={() => navigate("/profesores-create")}
+          onClick={() => navigate("/profesores")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

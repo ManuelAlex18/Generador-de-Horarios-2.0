@@ -62,7 +62,7 @@ function App() {
           {/* Rutas protegidas */}
           <Route path="/schedule" element={<PrivateRoute requireRole={true}><Home /></PrivateRoute>} />
           <Route path="/admin-usuarios" element={<PrivateRoute requireRole={true}><AdminUsuarios /></PrivateRoute>} />
-          <Route path="/period-form" element={<PrivateRoute requireRole={true}><PeriodForm /></PrivateRoute>} />
+          <Route path="/periodos" element={<PrivateRoute requireRole={true}><PeriodForm /></PrivateRoute>} />
           <Route path="/mapa-horarios" element={<PrivateRoute><MapaHorarios /></PrivateRoute>} />
           <Route path="/periodos/:id" element={<PrivateRoute requireRole={true}><EditPeriod /></PrivateRoute>} />
           <Route path="/subjects-details" element={<PrivateRoute requireRole={true}><SubjectsDetails /></PrivateRoute>} />
@@ -81,8 +81,8 @@ function App() {
             path="/calendario/:scheduleId"
             element={<PrivateRoute><CalendarioWrapper /></PrivateRoute>}
           />
-          <Route path="/subjects-create" element={<PrivateRoute requireRole={true}><SubjectForm /></PrivateRoute>} />
-          <Route path="/profesores-create" element={<PrivateRoute requireRole={true}><TeacherForm /></PrivateRoute>} />
+          <Route path="/asignaturas" element={<PrivateRoute requireRole={true}><SubjectForm /></PrivateRoute>} />
+          <Route path="/profesores" element={<PrivateRoute requireRole={true}><TeacherForm /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     );
