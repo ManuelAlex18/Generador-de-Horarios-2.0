@@ -6,10 +6,10 @@ set -o errexit
 echo "Instalando dependencias de Python..."
 pip install -r requirements.txt
 
-# Instalar Playwright y sus navegadores (para PDFs)
+# Instalar Playwright y navegadores (solo Chromium para ahorrar espacio)
 echo "Instalando Playwright..."
-playwright install
-playwright install-deps
+pip install playwright
+playwright install chromium
 
 # Recopilar archivos estáticos
 echo "Recopilando archivos estáticos..."

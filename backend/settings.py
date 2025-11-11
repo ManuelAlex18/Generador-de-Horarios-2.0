@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,16 +23,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # Determinar si estamos en producción (Render)
-IS_PRODUCTION = os.environ.get('RENDER', 'False') == 'True'
+IS_PRODUCTION = config('RENDER', default='False', cast=bool)
 
 # SECRET_KEY: usa variable de entorno en producción, local en desarrollo
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-e1o*^$0wth5m=7$h4qd+c&agpc_h+ofw3t(bzzv&_d8$#75^&*')
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-e1o*^$0wth5m=7$h4qd+c&agpc_h+ofw3t(bzzv&_d8$#75^&*')
 
 # DEBUG: False en producción, True en desarrollo
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 # ALLOWED_HOSTS: dominios permitidos para acceder a tu app
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 
 # Application definition
@@ -154,10 +155,7 @@ if IS_PRODUCTION:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS: permite peticiones desde estos orígenes
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173'
-).split(',')
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173', cast=Csv())
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
