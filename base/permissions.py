@@ -24,5 +24,17 @@ class ReadOnlyOrAdminOrPlanner(BasePermission):
 
 # Función para crear los grupos si no existen (llamar desde ready() en apps.py)
 def create_default_groups():
-    for group_name in ['administrador', 'planificador']:
-        Group.objects.get_or_create(name=group_name)
+    from django.db import connection
+    from django.db.utils import OperationalError, ProgrammingError
+    
+    # Verificar si la tabla auth_group existe antes de intentar crear grupos
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM auth_group LIMIT 1")
+        
+        # Si llegamos aquí, la tabla existe, crear los grupos
+        for group_name in ['administrador', 'planificador']:
+            Group.objects.get_or_create(name=group_name)
+    except (OperationalError, ProgrammingError):
+        # La tabla aún no existe (migraciones no ejecutadas), ignorar
+        pass
