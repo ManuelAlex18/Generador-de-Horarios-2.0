@@ -94,8 +94,13 @@ export const calculateBalanceApi = (data) =>
 export const whoamiApi = (config = {}) =>
   apiClient.get("whoami/", config);
 
-// NUEVO: Endpoint para exportar el horario a PDF (fuera del apiClient baseURL para evitar /api/v1/)
-export const exportarHorarioPdfApi = (scheduleId) =>
-  axios.get(`http://localhost:8000/tasks/api/exportar-pdf/${scheduleId}/`, { responseType: 'blob' });
+
+// NUEVO: Endpoint para exportar el horario a PDF con Playwright
+export const exportarHorarioPdfPlaywrightApi = (scheduleId) =>
+  axios.get(`http://localhost:8000/tasks/api/exportar-pdf-playwright/${scheduleId}/`, { responseType: 'blob' });
+
+// NUEVO: Endpoint para exportar el horario a Imagen (PNG) con Playwright
+export const exportarHorarioImagenPlaywrightApi = (scheduleId) =>
+  axios.get(`http://localhost:8000/tasks/api/exportar-imagen-playwright/${scheduleId}/`, { responseType: 'blob' });
 
 

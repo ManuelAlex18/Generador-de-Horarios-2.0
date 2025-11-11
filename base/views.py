@@ -189,15 +189,49 @@ from django.http import HttpResponse
 import pdfkit
 from django.template.loader import render_to_string
 import os
+from django.templatetags.static import static
+from django.contrib.staticfiles import finders
+import base64
+import mimetypes
 
-def exportar_horario_pdf(request, schedule_id):
+
+
+def _collect_activities_for_schedule(schedule):
+    """Devuelve una lista de dicts {'activity_name','symb'} con las actividades usadas en los ClassTime del schedule.
+    Deduplica por (symb or name) y ordena por symb numérico cuando exista."""
+    activities_map = {}
+    try:
+        class_times_qs = ClassTime.objects.filter(schedule=schedule).prefetch_related('activities')
+    except Exception:
+        class_times_qs = []
+    for ct in class_times_qs:
+        try:
+            for a in ct.activities.all():
+                sym = str(a.symbology) if getattr(a, 'symbology', None) is not None else ''
+                key = sym or (a.name or '')
+                activities_map.setdefault(key, {'activity_name': a.name, 'symb': sym})
+        except Exception:
+            continue
+
+    def _sort_key(x):
+        s = x[1].get('symb', '')
+        try:
+            return (0, int(s))
+        except Exception:
+            return (1, x[1].get('activity_name') or '')
+
+    items = sorted(list(activities_map.items()), key=_sort_key)
+    return [v for k, v in items]
+
+
+def build_schedule_pdf_context(schedule_id, request=None):
+    """Construye el contexto completo para las plantillas de PDF a partir de un schedule_id.
+    Retorna un diccionario compatible con `plantilla_horario.html`.
+    """
     from datetime import timedelta
     from django.utils import timezone
     from django.utils.dateparse import parse_date
-    from django.db.models import Q
-    import calendar
 
-    # Obtener el horario y datos relacionados
     schedule = Schedule.objects.select_related('career', 'year', 'period').prefetch_related('subjects').get(pk=schedule_id)
     career = schedule.career
     year = schedule.year
@@ -205,20 +239,16 @@ def exportar_horario_pdf(request, schedule_id):
     course = period.course if hasattr(period, 'course') else None
     subjects = {s.id: s for s in schedule.subjects.all()}
 
-    # Fechas de periodo
     start_date = period.start
     end_date = period.end
 
-    # Días y semanas no disponibles
     dias_no_disponibles = list(DayNotAvailable.objects.filter(period=period))
     semanas_no_disponibles = list(WeekNotAvailable.objects.filter(period=period))
 
-    # Construir rango de semanas válidas (lunes a viernes)
     weeks = []
-    current = start_date - timedelta(days=start_date.weekday())  # lunes de la primera semana
+    current = start_date - timedelta(days=start_date.weekday())
     week_num = 1
     while current <= end_date:
-        # Verificar si la semana está en semanas no disponibles
         unavailable = False
         for w in semanas_no_disponibles:
             if w.start_date <= current <= w.end_date:
@@ -233,50 +263,79 @@ def exportar_horario_pdf(request, schedule_id):
             week_num += 1
         current += timedelta(weeks=1)
 
-    # Días de la semana (lunes a viernes, sin sábado)
     dias_semana = [
         {'nombre': 'Lunes', 'index': 0},
         {'nombre': 'Martes', 'index': 1},
         {'nombre': 'Miércoles', 'index': 2},
         {'nombre': 'Jueves', 'index': 3},
         {'nombre': 'Viernes', 'index': 4},
+        {'nombre': 'Sábado', 'index': 5},
     ]
 
-    # Obtener todos los turnos de este horario
-    class_times = list(ClassTime.objects.filter(schedule=schedule).select_related('subject', 'teacher'))
-    # Calcular el máximo de turnos por día (para la estructura de la tabla)
+    # Traer turnos con subject, teacher y actividades
+    class_times = list(
+        ClassTime.objects.filter(schedule=schedule)
+        .select_related('subject', 'teacher')
+        .prefetch_related('activities')
+    )
     max_turnos = max([ct.number for ct in class_times], default=1)
     max_turnos = min(max_turnos, 6)
 
-    # Último turno de la mañana (puedes ajustar si tienes lógica específica)
     last_shift_in_the_morning = 3
 
-    # Mapear días no disponibles por fecha
     dias_libres = {d.day: d.reason for d in dias_no_disponibles}
 
-    # Construir la estructura de la tabla: semanas x días x turnos
+    def _to_date_obj(x):
+        if x is None:
+            return None
+        try:
+            from datetime import date as _date, datetime as _datetime
+        except Exception:
+            _date = None
+            _datetime = None
+        if hasattr(x, 'date') and callable(x.date):
+            try:
+                return x.date()
+            except Exception:
+                pass
+        if isinstance(x, str):
+            try:
+                return parse_date(x)
+            except Exception:
+                return None
+        return x
+
     full_classtimes = []
     for week in weeks:
         week_row = []
         for dia in dias_semana:
-            fecha = week['start'] + timedelta(days=dia['index'])
-            # Si el día es no disponible, dejar todos los turnos en blanco
-            if fecha in dias_libres:
-                week_row.append({'type': 'libre', 'fecha': fecha})
+            fecha_dt = week['start'] + timedelta(days=dia['index'])
+            fecha = _to_date_obj(fecha_dt)
+            if fecha in { _to_date_obj(k) for k in dias_libres.keys() }:
+                week_row.append({'type': 'libre', 'fecha': fecha_dt})
                 continue
-            # Obtener turnos para ese día
-            turnos_dia = [ct for ct in class_times if ct.day == fecha]
+            turnos_dia = [ct for ct in class_times if _to_date_obj(getattr(ct, 'day', None)) == fecha]
             turnos_cells = []
             for i in range(1, max_turnos+1):
                 turno = next((t for t in turnos_dia if t.number == i), None)
                 if turno:
                     subject = turno.subject
                     teacher = turno.teacher
+                    try:
+                        activities_qs = list(turno.activities.all())
+                    except Exception:
+                        activities_qs = []
+                    activities_syms = []
+                    for a in activities_qs:
+                        if hasattr(a, 'symbology') and a.symbology is not None:
+                            activities_syms.append(str(a.symbology))
+                        else:
+                            activities_syms.append((a.name or '')[:6])
                     turno_dict = {
                         'subject_symb': getattr(subject, 'symbology', subject.name[:3] if subject else ''),
                         'subject_name': subject.name if subject else '',
                         'teacher_name': teacher.name if teacher else '',
-                        'activities': '',
+                        'activities': '/'.join(activities_syms) if activities_syms else '',
                         'group': '',
                         'room': '',
                     }
@@ -293,7 +352,9 @@ def exportar_horario_pdf(request, schedule_id):
             week_row.append({'type': 'turnos', 'turnos': turnos_cells, 'fecha': fecha})
         full_classtimes.append(week_row)
 
-    # Leyenda de asignaturas y profesores (abreviatura y nombre)
+    while len(full_classtimes) < 24:
+        full_classtimes.append([{'type': 'libre', 'fecha': None} for _ in range(6)])
+
     subjects_activities = []
     for subject in subjects.values():
         teacher_name = ''
@@ -307,17 +368,16 @@ def exportar_horario_pdf(request, schedule_id):
             'teacher_name': teacher_name,
         })
 
-    # Calcular weeks_cols para la plantilla
-    weeks_cols = len(weeks) * 6
+    # activities_list via helper
+    activities_list = _collect_activities_for_schedule(schedule)
 
-    # --- AGRUPAR SEMANAS EN BLOQUES DE 4 PARA LA TABLA PDF ---
+    weeks_blocks = []
     def chunk_list(lst, n):
         return [lst[i:i + n] for i in range(0, len(lst), n)]
 
-    weeks_blocks = chunk_list(weeks, 4)  # Cambiado de 5 a 4
-    full_classtimes_blocks = chunk_list(full_classtimes, 4)  # Cambiado de 5 a 4
+    weeks_blocks = chunk_list(weeks, 4)
+    full_classtimes_blocks = chunk_list(full_classtimes, 4)
 
-    # turnos_grid_blocks: lista de bloques, cada uno es lista de filas (turnos), cada fila es lista de celdas (4*5)
     turnos_grid_blocks = []
     for block_idx, week_block in enumerate(full_classtimes_blocks):
         block_grid = []
@@ -329,8 +389,13 @@ def exportar_horario_pdf(request, schedule_id):
                         fila.append({'type': 'vacio'})
                     elif day['type'] == 'turnos':
                         turno = day['turnos'][turno_idx] if turno_idx < len(day['turnos']) else None
-                        if turno and turno['subject_symb']:
-                            fila.append({'type': 'turno', 'subject_symb': turno['subject_symb']})
+                        if turno and (turno.get('subject_symb') or turno.get('activities')):
+                            fila.append({
+                                'type': 'turno',
+                                'subject_symb': turno.get('subject_symb'),
+                                'subject_name': turno.get('subject_name'),
+                                'activities': turno.get('activities', ''),
+                            })
                         else:
                             fila.append({'type': 'vacio'})
                     else:
@@ -338,19 +403,75 @@ def exportar_horario_pdf(request, schedule_id):
             block_grid.append(fila)
         turnos_grid_blocks.append(block_grid)
 
-    # Para la cabecera de fechas/días por bloque
     dates_by_row_of_weeks_blocks = chunk_list([
         {
             'weekNum': w['weekNum'],
             'start': w['start'].strftime('%d/%m/%Y'),
             'end': w['end'].strftime('%d/%m/%Y'),
         } for w in weeks
-    ], 4)  # Cambiado de 5 a 4
+    ], 4)
 
-    # weeks_cols_blocks: lista con el número de columnas de cada bloque (4*5, o menos si el último bloque tiene menos semanas)
-    weeks_cols_blocks = [len(block) * 5 for block in weeks_blocks]
+    weeks_cols_blocks = [len(block) * 6 for block in weeks_blocks]
 
-    # --- PREPARAR BLOQUES PARA EL TEMPLATE (sin filtros custom ni index en template) ---
+    # Construir weeks_for_template (24 bloques)
+    weeks_for_template = []
+    max_weeks_to_show = 24
+    for wi in range(max_weeks_to_show):
+        if wi < len(full_classtimes):
+            week_days = full_classtimes[wi]
+            padded_week_days = []
+            for d in range(6):
+                if d < len(week_days):
+                    padded_week_days.append(week_days[d])
+                else:
+                    padded_week_days.append({'type': 'libre', 'fecha': None})
+            rows = []
+            for r in range(6):
+                row_cells = []
+                for d in range(6):
+                    day = padded_week_days[d]
+                    if day.get('type') == 'turnos':
+                        turnos = day.get('turnos', [])
+                        if r < len(turnos):
+                            turno = turnos[r]
+                            subject_part = (
+                                turno.get('subject_symb')
+                                or (turno.get('subject_name')[:10] if turno.get('subject_name') else '')
+                            )
+                            activities_part = turno.get('activities', '')
+                            if activities_part:
+                                cell_text = subject_part + '/' + activities_part if subject_part else activities_part
+                            else:
+                                cell_text = subject_part
+                            row_cells.append(cell_text)
+                        else:
+                            row_cells.append('')
+                    else:
+                        row_cells.append('')
+                rows.append(row_cells)
+            if wi < len(weeks):
+                wk = weeks[wi]
+                try:
+                    title = f"{wk['start'].strftime('%d/%m/%Y')} al {wk['end'].strftime('%d/%m/%Y')}"
+                except Exception:
+                    title = ''
+            else:
+                title = ''
+            weeks_for_template.append({'title': title, 'rows': rows})
+        else:
+            empty_rows = [['' for _ in range(6)] for _ in range(6)]
+            weeks_for_template.append({'title': '', 'rows': empty_rows})
+
+    # Padear legibles a 10 filas
+    MAX_LEGEND_ROWS = 10
+    subjects_activities_padded = subjects_activities[:MAX_LEGEND_ROWS]
+    while len(subjects_activities_padded) < MAX_LEGEND_ROWS:
+        subjects_activities_padded.append({'subject_symb': '', 'subject_name': '', 'teacher_name': ''})
+
+    activities_list_padded = activities_list[:MAX_LEGEND_ROWS]
+    while len(activities_list_padded) < MAX_LEGEND_ROWS:
+        activities_list_padded.append({'activity_name': '', 'symb': ''})
+
     blocks = []
     num_blocks = len(weeks_cols_blocks)
     for i in range(num_blocks):
@@ -362,25 +483,138 @@ def exportar_horario_pdf(request, schedule_id):
             'is_last': i == num_blocks - 1,
         })
 
-    # Construir contexto
     context = {
         'schedule': {
             'career': career.name,
-            'year': getattr(year, 'number_choice', str(year)),
+            'year': getattr(year, 'number_choice', getattr(year, 'year_abreviation', str(year))),
             'period': period.name,
             'course': course.name if course else '',
-            'updated': timezone.now().strftime('%d/%m/%Y'),
+            'updated': schedule.updated.strftime('%d/%m/%Y') if getattr(schedule, 'updated', None) else timezone.now().strftime('%d/%m/%Y'),
+            'faculty': getattr(getattr(career, 'faculty', None), 'name', ''),
+            'group': getattr(schedule, 'group', ''),
+            'class_room': getattr(getattr(schedule, 'class_room', None), 'name', ''),
         },
         'blocks': blocks,
         'last_shift_in_the_morning': last_shift_in_the_morning,
-        'subjects_activities': subjects_activities,
+        'subjects_activities': subjects_activities_padded,
+        'activities_list': activities_list_padded,
         'max_turnos': max_turnos,
     }
-    template_path = 'p4.html'
-    html_string = render_to_string(template_path, context)
-    wkhtmltopdf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'wkhtmltopdf.exe')
-    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
-    pdf = pdfkit.from_string(html_string, False, configuration=config)
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="horario.pdf"'
+    context['weeks'] = weeks_for_template
+    return context
+
+
+# ---
+# Nueva función: exportar PDF usando Playwright y la misma plantilla HTML
+def exportar_horario_pdf_playwright(request, schedule_id):
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except Exception:
+        return HttpResponse(
+            "Playwright no está disponible en este entorno. Instálalo con 'pip install playwright' y luego ejecuta 'playwright install'.",
+            status=503,
+        )
+    
+    # Construir contexto completo y pasar a la plantilla
+    context = build_schedule_pdf_context(schedule_id, request=request)
+    # Asegurar que 'weeks' existe y tiene 4 semanas con 6x6 celdas
+    if not context.get('weeks') or len(context.get('weeks', [])) < 4:
+        empty_weeks = []
+        for _ in range(4):
+            empty_weeks.append({'title': '', 'rows': [['' for _ in range(6)] for _ in range(6)]})
+        context['weeks'] = empty_weeks
+    template_path = 'plantilla_horario.html'
+    html_string = render_to_string(template_path, context, request=request)
+
+    # Asegurar resolución correcta de rutas relativas insertando <base href="...">
+    base_href = request.build_absolute_uri('/')
+    if '<head>' in html_string:
+        html_string = html_string.replace('<head>', f'<head><base href="{base_href}">', 1)
+    else:
+        html_string = f'<base href="{base_href}">{html_string}'
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            page = browser.new_page()
+            page.set_content(html_string, wait_until="networkidle")
+            pdf_bytes = page.pdf(format="A4")
+        finally:
+            browser.close()
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="horario_playwright.pdf"'
+    return response
+
+
+# ---
+# Nueva función: exportar imagen (PNG) usando Playwright y la misma plantilla HTML
+def exportar_horario_imagen_playwright(request, schedule_id):
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except Exception:
+        return HttpResponse(
+            "Playwright no está disponible en este entorno. Instálalo con 'pip install playwright' y luego ejecuta 'playwright install'.",
+            status=503,
+        )
+
+    # Construir contexto completo y pasar a la plantilla
+    context = build_schedule_pdf_context(schedule_id, request=request)
+    # Asegurar que 'weeks' existe y tiene 4 semanas con 6x6 celdas
+    if not context.get('weeks') or len(context.get('weeks', [])) < 4:
+        empty_weeks = []
+        for _ in range(4):
+            empty_weeks.append({'title': '', 'rows': [['' for _ in range(6)] for _ in range(6)]})
+        context['weeks'] = empty_weeks
+    template_path = 'plantilla_horario.html'
+    html_string = render_to_string(template_path, context, request=request)
+
+    # Asegurar resolución correcta de rutas relativas insertando <base href="...">
+    base_href = request.build_absolute_uri('/')
+    if '<head>' in html_string:
+        html_string = html_string.replace('<head>', f'<head><base href="{base_href}">', 1)
+    else:
+        html_string = f'<base href="{base_href}">{html_string}'
+
+    # Para evitar que el layout se mueva al tomar un screenshot, generamos primero un PDF
+    # (Playwright aplica las reglas @page correctamente) y luego convertimos ese PDF a PNG
+    # usando PyMuPDF (fitz) para obtener alta fidelidad y DPI controlado.
+    try:
+        import fitz  # PyMuPDF
+    except Exception:
+        return HttpResponse(
+            "Se requiere 'pymupdf' para convertir PDF a imagen. Instálalo con 'pip install pymupdf'.",
+            status=503,
+        )
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            page = browser.new_page()
+            # Forzar estilos de impresión para que la plantilla con @page se aplique
+            try:
+                page.emulate_media(media="print")
+            except Exception:
+                pass
+            page.set_content(html_string, wait_until="networkidle")
+            # Generar PDF con Playwright (esto preserva exactamente la distribución A4)
+            pdf_bytes = page.pdf(format="A4", print_background=True)
+        finally:
+            browser.close()
+
+    # Convertir PDF -> PNG con PyMuPDF
+    try:
+        # Abrir PDF desde bytes
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page0 = doc.load_page(0)
+        dpi = 300.0
+        zoom = dpi / 72.0
+        mat = fitz.Matrix(zoom, zoom)
+        pix = page0.get_pixmap(matrix=mat, alpha=False)
+        png_bytes = pix.tobytes("png")
+    except Exception as e:
+        return HttpResponse(f"Error al convertir PDF a imagen: {str(e)}", status=500)
+
+    response = HttpResponse(png_bytes, content_type='image/png')
+    response['Content-Disposition'] = 'attachment; filename="horario_playwright.png"'
     return response

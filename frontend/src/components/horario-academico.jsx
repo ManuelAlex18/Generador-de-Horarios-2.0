@@ -31,7 +31,8 @@ import {
   days_not_availableApi,
   weeks_not_availableApi,
   teachersApi,
-  exportarHorarioPdfApi,
+  exportarHorarioPdfPlaywrightApi,
+  exportarHorarioImagenPlaywrightApi,
   activitysApi,
 } from "../api/tasks.api";
 import { BalanceCargaTable } from "@/components/load-balance-table";
@@ -259,6 +260,8 @@ export function HorarioAcademico({ scheduleId }) {
   const [editedTurnos, setEditedTurnos] = useState([]); // editable
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [exportError, setExportError] = useState("");
+  const [showExportOptions, setShowExportOptions] = useState(false);
   const [semanasNoDisponibles, setSemanasNoDisponibles] = useState([]); // <--- NUEVO
   const [courseName, setCourseName] = useState(""); // Nuevo estado para el nombre del curso
   const [allClassTimes, setAllClassTimes] = useState([]); // NUEVO
@@ -644,9 +647,10 @@ export function HorarioAcademico({ scheduleId }) {
 
   // Botón para exportar a PDF
   const handleExportarPDF = async () => {
+    setExportError("");
     try {
-      const response = await exportarHorarioPdfApi(scheduleId);
-      // Crear un enlace para descargar el PDF
+      const response = await exportarHorarioPdfPlaywrightApi(scheduleId);
+      if (!response || !response.data) throw new Error('no se pudo hacer la exportacion');
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
@@ -656,7 +660,26 @@ export function HorarioAcademico({ scheduleId }) {
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      alert('Error al exportar el horario a PDF');
+      setExportError('no se pudo hacer la exportacion');
+    }
+  };
+
+  // Botón para exportar a Imagen (PNG)
+  const handleExportarImagen = async () => {
+    setExportError("");
+    try {
+      const response = await exportarHorarioImagenPlaywrightApi(scheduleId);
+      if (!response || !response.data) throw new Error('no se pudo hacer la exportacion');
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'image/png' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'horario.png');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError('no se pudo hacer la exportacion');
     }
   };
 
@@ -800,7 +823,8 @@ export function HorarioAcademico({ scheduleId }) {
                   Periodo Seleccionado
                 </DialogTitle>
                 <DialogDescription className="hidden" />
-                <div className="px-6 py-5">
+                {/* Contenido con scroll */}
+                <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
                   <div className="mb-4 flex flex-col gap-2">
                     <span className="font-semibold text-blue-900 text-base flex items-center gap-2">
                       <Badge className="bg-blue-100 text-blue-800 border border-blue-300 px-2 py-1 rounded font-bold text-sm">
@@ -899,14 +923,45 @@ export function HorarioAcademico({ scheduleId }) {
               </Button>
             )
           )}
-          <Button
-            onClick={handleExportarPDF}
-            variant="outline"
-            className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700 w-full md:w-auto"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Exportar a PDF
-          </Button>
+          <div className="relative">
+            <Button
+              onClick={() => setShowExportOptions((s) => !s)}
+              variant="outline"
+              className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700 w-full md:w-auto flex items-center"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+            {showExportOptions && (
+              <div className="absolute right-0 mt-2 bg-white border rounded shadow-md z-50 flex flex-col">
+                <Button
+                  onClick={async () => {
+                    setShowExportOptions(false);
+                    await handleExportarPDF();
+                  }}
+                  variant="ghost"
+                  className="text-left px-4 py-2"
+                >
+                  Exportar a PDF
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setShowExportOptions(false);
+                    await handleExportarImagen();
+                  }}
+                  variant="ghost"
+                  className="text-left px-4 py-2"
+                >
+                  Exportar a Imagen
+                </Button>
+              </div>
+            )}
+          </div>
+          {exportError && (
+            <div className="mb-2 p-2 bg-red-100 text-red-700 rounded">
+              {exportError}
+            </div>
+          )}
           {hasRole && (
             <Button
               onClick={eliminarHorario}

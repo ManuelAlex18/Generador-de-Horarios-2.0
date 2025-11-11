@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from base import views
-from base.views import RegisterView, UserAdminViewSet, CustomTokenObtainPairView
+from base.views import RegisterView, UserAdminViewSet, CustomTokenObtainPairView, exportar_horario_pdf_playwright, exportar_horario_imagen_playwright
 
 router = routers.DefaultRouter()
 router.register(r'(?P<model_name>[^/.]+)', views.GenericModelViewSet, basename='generic')
@@ -20,5 +20,6 @@ urlpatterns = [
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/register/', RegisterView.as_view(), name='register'),
-    path('api/exportar-pdf/<int:schedule_id>/', views.exportar_horario_pdf, name='exportar_horario_pdf'),
+    path('api/exportar-pdf-playwright/<int:schedule_id>/', exportar_horario_pdf_playwright, name='exportar_horario_pdf_playwright'),
+    path('api/exportar-imagen-playwright/<int:schedule_id>/', exportar_horario_imagen_playwright, name='exportar_horario_imagen_playwright'),
 ]
