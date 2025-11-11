@@ -7,7 +7,9 @@ import {
   yearsApi,
   subjectsApi,
 } from "../api/tasks.api";
-import { API_BASE_URL } from "../config.js";
+
+// Definir API_BASE_URL directamente desde las variables de entorno
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export function EditSubject() {
   const { id } = useParams();
