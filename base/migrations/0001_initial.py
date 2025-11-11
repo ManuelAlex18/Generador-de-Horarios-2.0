@@ -227,11 +227,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='period',
-            constraint=models.CheckConstraint(condition=models.Q(('start__week_day', 1), _negated=True), name='check_start_period_not_sunday', violation_error_message='La fecha de inicio no puede ser domingo'),
+            constraint=models.CheckConstraint(check=models.Q(('start__week_day', 1), _negated=True), name='check_start_period_not_sunday', violation_error_message='La fecha de inicio no puede ser domingo'),
         ),
         migrations.AddConstraint(
             model_name='period',
-            constraint=models.CheckConstraint(condition=models.Q(('end__week_day', 1), _negated=True), name='check_end_period_not_sunday', violation_error_message='La fecha de fin no puede ser domingo'),
+            constraint=models.CheckConstraint(check=models.Q(('end__week_day', 1), _negated=True), name='check_end_period_not_sunday', violation_error_message='La fecha de fin no puede ser domingo'),
         ),
         migrations.AddConstraint(
             model_name='daynotavailable',
@@ -239,7 +239,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='daynotavailable',
-            constraint=models.CheckConstraint(condition=models.Q(('day__week_day', 1), _negated=True), name='check_day_not_available_not_sunday', violation_error_message='El día no puede ser domingo'),
+            constraint=models.CheckConstraint(check=models.Q(('day__week_day', 1), _negated=True), name='check_day_not_available_not_sunday', violation_error_message='El día no puede ser domingo'),
         ),
         migrations.AddConstraint(
             model_name='classtime',
@@ -247,7 +247,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='classtime',
-            constraint=models.CheckConstraint(condition=models.Q(('day__week_day', 1), _negated=True), name='check_day_not_sunday', violation_error_message='El día no puede ser domingo'),
+            constraint=models.CheckConstraint(check=models.Q(('day__week_day', 1), _negated=True), name='check_day_not_sunday', violation_error_message='El día no puede ser domingo'),
         ),
         migrations.AddConstraint(
             model_name='weeknotavailable',
