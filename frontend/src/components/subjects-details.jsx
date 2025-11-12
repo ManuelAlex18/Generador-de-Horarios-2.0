@@ -21,6 +21,9 @@ import {
   subjectsApi,
 } from "../api/tasks.api";
 
+// Definir API_BASE_URL directamente desde las variables de entorno
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 export function SubjectsDetails() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFaculty, setSelectedFaculty] = useState("");
@@ -62,7 +65,7 @@ export function SubjectsDetails() {
   // Cargar todos los profesores con autenticación y validación de array
   useEffect(() => {
     const token = localStorage.getItem("access");
-    fetch("http://localhost:8000/tasks/api/v1/teachers/", {
+    fetch(`${API_BASE_URL}/tasks/api/v1/teachers/`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((response) => {
