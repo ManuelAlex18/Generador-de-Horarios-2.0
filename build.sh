@@ -2,23 +2,21 @@
 # Script de compilación para Render
 set -o errexit
 
-echo "=== Iniciando build para Render ==="
-
 # Instalar dependencias de Python
-echo "📦 Instalando dependencias de Python..."
+echo "Instalando dependencias de Python..."
 pip install -r requirements.txt
 
-# Ejecutar migraciones PRIMERO (antes de collectstatic)
-echo "🗄️  Ejecutando migraciones de base de datos..."
-python manage.py migrate --noinput
+# Instalar Playwright y sus navegadores (para PDFs)
+echo "Instalando Playwright..."
+playwright install
+playwright install-deps
 
 # Recopilar archivos estáticos
-echo "📁 Recopilando archivos estáticos..."
+echo "Recopilando archivos estáticos..."
 python manage.py collectstatic --no-input
 
-# Instalar Playwright (opcional, puede fallar en plan free)
-echo "🎭 Intentando instalar Playwright..."
-pip install playwright || echo "⚠️  Playwright no se pudo instalar (no crítico)"
-playwright install chromium || echo "⚠️  Chromium no se pudo instalar (no crítico)"
+# Ejecutar migraciones
+echo "Ejecutando migraciones..."
+python manage.py migrate
 
-echo "✅ Build completado exitosamente!"
+echo "Build completado exitosamente!"

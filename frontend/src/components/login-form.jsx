@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { jwtDecode } from "jwt-decode";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 function LoginForm() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [message, setMessage] = useState("");
@@ -16,7 +18,7 @@ function LoginForm() {
     setMessage("");
     setSuccess(false);
     try {
-      const response = await fetch("http://localhost:8000/tasks/api/token/", {
+      const response = await fetch(`${API_BASE_URL}/tasks/api/token/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

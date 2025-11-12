@@ -1,7 +1,10 @@
 import axios from "axios";
 
+// Usa la variable de entorno o localhost por defecto
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 const apiClient = axios.create({
-  baseURL: "http://localhost:8000/tasks/api/v1/",
+  baseURL: `${API_BASE_URL}/tasks/api/v1/`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -38,7 +41,7 @@ apiClient.interceptors.response.use(
         }
 
         // Intentar refrescar el token
-        const response = await axios.post("http://localhost:8000/tasks/api/token/refresh/", {
+        const response = await axios.post(`${API_BASE_URL}/tasks/api/token/refresh/`, {
           refresh: refreshToken,
         });
 
@@ -88,7 +91,7 @@ export const usersApi = createApiEndpoints("admin/users");
 
 // Endpoint para calcular balance
 export const calculateBalanceApi = (data) =>
-  apiClient.post("http://localhost:8000/tasks/api/calculate-balance/", data);
+  apiClient.post("calculate-balance/", data);
 
 // NUEVO: Endpoint para obtener el rol/grupo del usuario autenticado
 export const whoamiApi = (config = {}) =>
@@ -97,10 +100,10 @@ export const whoamiApi = (config = {}) =>
 
 // NUEVO: Endpoint para exportar el horario a PDF con Playwright
 export const exportarHorarioPdfPlaywrightApi = (scheduleId) =>
-  axios.get(`http://localhost:8000/tasks/api/exportar-pdf-playwright/${scheduleId}/`, { responseType: 'blob' });
+  axios.get(`${API_BASE_URL}/tasks/api/exportar-pdf-playwright/${scheduleId}/`, { responseType: 'blob' });
 
 // NUEVO: Endpoint para exportar el horario a Imagen (PNG) con Playwright
 export const exportarHorarioImagenPlaywrightApi = (scheduleId) =>
-  axios.get(`http://localhost:8000/tasks/api/exportar-imagen-playwright/${scheduleId}/`, { responseType: 'blob' });
+  axios.get(`${API_BASE_URL}/tasks/api/exportar-imagen-playwright/${scheduleId}/`, { responseType: 'blob' });
 
 

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 function RegisterForm() {
   const [form, setForm] = useState({ username: "", password: "", email: "" });
   const [message, setMessage] = useState("");
@@ -15,7 +17,7 @@ function RegisterForm() {
     setSuccess(false);
     try {
       const response = await fetch(
-        "http://localhost:8000/tasks/api/register/",
+        `${API_BASE_URL}/tasks/api/register/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
