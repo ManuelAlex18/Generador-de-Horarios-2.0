@@ -52,7 +52,7 @@
 
 ## ¿Qué hace render-install.sh?
 
-El script realiza 3 pasos críticos:
+El script realiza 4 pasos críticos:
 
 1. **Instala dependencias de Python** (`pip install -r requirements.txt`)
    - Incluye Django, Playwright, PyMuPDF, etc.
@@ -63,6 +63,9 @@ El script realiza 3 pasos críticos:
 
 3. **Instala dependencias del sistema** (`playwright install-deps chromium`)
    - Instala librerías del sistema necesarias para Chromium (libfonts, etc.)
+
+4. **Ejecuta migraciones** (`python manage.py migrate`)
+   - Aplica cambios del modelo de datos a la base de datos PostgreSQL
 
 ## Verificación
 

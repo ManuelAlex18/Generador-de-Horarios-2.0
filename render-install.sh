@@ -10,4 +10,7 @@ playwright install chromium
 echo "📦 Instalando dependencias del sistema para Playwright..."
 playwright install-deps chromium
 
+echo "🗄️ Ejecutando migraciones de base de datos..."
+python manage.py migrate
+
 echo "✅ Instalación completada"
