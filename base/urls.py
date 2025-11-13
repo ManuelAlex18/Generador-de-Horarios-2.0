@@ -14,9 +14,9 @@ admin_router.register(r'users', UserAdminViewSet, basename='user-admin')
 
 urlpatterns = [
     path('api/v1/whoami/', views.whoami, name='whoami'),
+    path('api/v1/calculate-balance/', views.calculate_balance, name='calculate_balance'),  # DEBE ir antes del router genérico
     path('api/v1/admin/', include(admin_router.urls)),  # Primero admin_router
     path('api/v1/', include(router.urls)),
-    path('api/calculate-balance/', views.calculate_balance, name='calculate_balance'),
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/register/', RegisterView.as_view(), name='register'),

@@ -32,7 +32,6 @@ import { EditActivity } from "./components/edit-activity";
 import { RoomsDetails } from "./components/rooms-details";
 import { RoomForm } from "./components/room-form";
 import { EditRoom } from "./components/edit-room";
-import DiagnosticoAPI from "./components/DiagnosticoAPI";
 
 function PrivateRoute({ children, requireRole = false }) {
   const isAuth = !!localStorage.getItem("access");
@@ -66,7 +65,6 @@ function App() {
         <Route path="/inicio" element={<HomePage />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/login" element={<LoginForm />} />
-        <Route path="/diagnostico" element={<DiagnosticoAPI />} />
         {/* Rutas protegidas */}
         <Route path="/schedule" element={<PrivateRoute requireRole={true}><Home /></PrivateRoute>} />
         <Route path="/admin-usuarios" element={<PrivateRoute requireRole={true}><AdminUsuarios /></PrivateRoute>} />

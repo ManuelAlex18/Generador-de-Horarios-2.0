@@ -69,7 +69,8 @@ class GenericModelViewSet(viewsets.ModelViewSet):
 def calculate_balance(request):
     data = request.data
     # Aquí va tu lógica con los datos recibidos
-    print("Datos recibidos:", data)
+    print("===== DATOS RECIBIDOS EN BACKEND =====")
+    print("Data completo:", data)
 
     # Asignar valores a variables de Python
     subjects_symbology = data.get('subjectsSymbology')
@@ -87,6 +88,14 @@ def calculate_balance(request):
     group = data.get('group')
     class_room_id = data.get('classRoom')
     
+    print(f"periodId: {period_id}")
+    print(f"careerId: {career_id}")
+    print(f"yearId: {year_id}")
+    print(f"subjectIds: {subject_ids}")
+    print(f"group: {group}")
+    print(f"classRoom: {class_room_id}")
+    print("=======================================")
+    
     # Validar campos requeridos
     if not period_id:
         return Response({"error": "El campo 'periodId' es requerido"}, status=400)
@@ -96,6 +105,10 @@ def calculate_balance(request):
         return Response({"error": "El campo 'yearId' es requerido"}, status=400)
     if not subject_ids or len(subject_ids) == 0:
         return Response({"error": "Debe seleccionar al menos una asignatura"}, status=400)
+    if not group:
+        return Response({"error": "El campo 'group' es requerido"}, status=400)
+    if not class_room_id:
+        return Response({"error": "El campo 'classRoom' es requerido"}, status=400)
 
     print("Subjects symbology:", subjects_symbology)
     print("Weeks count:", weeks_count)

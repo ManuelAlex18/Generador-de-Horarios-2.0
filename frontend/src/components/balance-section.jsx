@@ -242,10 +242,7 @@ export default function BalanceSection({ data, updateData, onComplete }) {
       group: data.basicInfo?.group || null, // Enviar grupo
       classRoom: data.basicInfo?.class_room || null, // Enviar local (aula)
     };
-    
-    // Debug: Mostrar los datos que se van a enviar
-    console.log("📤 Datos a enviar al backend:", formData);
-    console.log("📋 BasicInfo:", data.basicInfo);
+
 
     try {
       // Usar el cliente API que ya incluye el token y refresco
@@ -257,19 +254,17 @@ export default function BalanceSection({ data, updateData, onComplete }) {
         alert("Balance calculated! Check the console for backend response.");
       }
     } catch (error) {
-      console.error("Error sending data to backend:", error);
-      console.error("Error response:", error.response?.data);
+      console.error("=== ERROR DEL BACKEND ===");
+      console.error("Error completo:", error);
+      console.error("Response data:", error.response?.data);
+      console.error("Response status:", error.response?.status);
+      console.error("=========================");
       
-      // Mostrar el mensaje de error específico del backend
-      let errorMessage = "Failed to calculate balance.";
-      if (error.response && error.response.data) {
-        if (error.response.data.error) {
-          errorMessage = error.response.data.error;
-        } else {
-          errorMessage = JSON.stringify(error.response.data);
-        }
-      }
-      alert(errorMessage);
+      // Mostrar error específico del backend si está disponible
+      const errorMsg = error.response?.data?.error || 
+                      JSON.stringify(error.response?.data) || 
+                      "Failed to calculate balance.";
+      alert(`Error: ${errorMsg}`);
     }
   };
 
