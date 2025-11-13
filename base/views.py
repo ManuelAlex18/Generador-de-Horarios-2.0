@@ -577,7 +577,15 @@ def exportar_horario_pdf_playwright(request, schedule_id):
     try:
         print("🎭 Iniciando Playwright...")
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu'
+                ]
+            )
             try:
                 page = browser.new_page()
                 page.set_content(html_string, wait_until="networkidle")
@@ -660,7 +668,15 @@ def exportar_horario_imagen_playwright(request, schedule_id):
     try:
         print("🎭 Iniciando Playwright...")
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu'
+                ]
+            )
             try:
                 page = browser.new_page()
                 # Forzar estilos de impresión para que la plantilla con @page se aplique

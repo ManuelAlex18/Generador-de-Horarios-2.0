@@ -4,11 +4,9 @@
 echo "🔧 Instalando dependencias de Python..."
 pip install -r requirements.txt
 
-echo "🎭 Instalando navegadores de Playwright..."
-playwright install chromium
-
-echo "📦 Instalando dependencias del sistema para Playwright..."
-playwright install-deps chromium
+echo "🎭 Instalando navegadores de Playwright con dependencias..."
+# Usar --with-deps para instalar el navegador Y las dependencias del sistema en un solo comando
+playwright install --with-deps chromium
 
 echo "� Recolectando archivos estáticos..."
 python manage.py collectstatic --no-input
