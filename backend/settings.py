@@ -101,9 +101,9 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
             'NAME': config('NAME', default='horarios_db'),
-            'USER': config('USER', default='postgres'),
-            'PASSWORD': config('PASSWORD', default='root'),
-            'HOST': config('HOST', default='127.0.0.1'),
+            'USER': config('USER_DB', default='postgres'),
+            'PASSWORD': config('PASSWORD_DB', default='root'),
+            'HOST': config('HOST_DB', default='127.0.0.1'),
             'DATABASE_PORT': config('DATABASE_PORT', default='5432'),
         },
     }
