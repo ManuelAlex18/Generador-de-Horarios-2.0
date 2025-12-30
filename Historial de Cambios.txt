@@ -1,0 +1,3 @@
+Hasta este punto en el sitio solo se han implementado cambios para el despliegue del server 
+con Daphne y se programó un script de python para la asignacion de los grupos de permisos 
+despues de que se haya creado un usuario.
