@@ -17,11 +17,11 @@ export function HomePage() {
       <div className="max-w-4xl mx-auto text-center text-white relative z-10">
         <img
           src={logo}
-          alt="Logo HorarioUCF"
+          alt="Logo HorariosUCf"
           className="mx-auto mb-6 h-40 w-40 rounded-xl animate-float"
           style={{ objectFit: "contain" }}
         />
-        <h1 className="text-5xl font-bold mb-6 animate-fade-in">Bienvenido a HorarioUCF</h1>
+        <h1 className="text-5xl font-bold mb-6 animate-fade-in">Bienvenido a HorariosUCf</h1>
         <p className="text-xl mb-12 text-gray-100 animate-fade-in-delayed">
           Sistema de generación automática de horarios académicos para la
           Universidad de Cienfuegos

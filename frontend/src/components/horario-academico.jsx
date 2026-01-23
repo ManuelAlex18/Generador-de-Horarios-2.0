@@ -465,10 +465,10 @@ export function HorarioAcademico({ scheduleId }) {
       const nuevoNumero = targetPosition.posicion + 1;
       // Eliminar el turno origen completamente
       nuevosTurnos = nuevosTurnos.filter((t) => t.id !== origen.id);
-      // Crear nuevo turno (sin id, para que guardarCambios lo detecte como nuevo)
+      // Crear nuevo turno con ID temporal único para que pueda ser movido nuevamente
       const nuevoTurno = {
         ...origen,
-        id: undefined, // sin id para que se detecte como nuevo
+        id: `temp_${Date.now()}_${Math.random()}`, // ID temporal único
         day: nuevaFecha,
         number: nuevoNumero,
       };
@@ -508,8 +508,8 @@ export function HorarioAcademico({ scheduleId }) {
         if (!edit) {
           // Antes había turno, ahora no hay: eliminar
           turnosAEliminar.push(orig);
-        } else if (edit.id === orig.id) {
-          // Mismo turno, comparar campos editables
+        } else if (edit.id === orig.id && !String(edit.id).startsWith("temp_")) {
+          // Mismo turno (no temporal), comparar campos editables
           const origSubject =
             typeof orig.subject === "object" ? orig.subject.id : orig.subject;
           const currSubject =
@@ -546,7 +546,7 @@ export function HorarioAcademico({ scheduleId }) {
             turnosAActualizar.push(edit);
           }
         } else {
-          // Antes había un turno, ahora hay otro diferente: eliminar el original y crear el nuevo
+          // Antes había un turno, ahora hay otro diferente (o es temporal): eliminar el original y crear el nuevo
           turnosAEliminar.push(orig);
           turnosACrear.push(edit);
         }
@@ -554,13 +554,21 @@ export function HorarioAcademico({ scheduleId }) {
       // b) Recorrer posiciones editadas que no estaban en original: crear
       for (const key in editPosMap) {
         if (!origPosMap[key]) {
-          turnosACrear.push(editPosMap[key]);
+          const turno = editPosMap[key];
+          // Si tiene ID temporal (string que comienza con "temp_"), es un turno nuevo
+          // Si no tiene ID (undefined) o tiene ID temporal, es un turno a crear
+          if (!turno.id || String(turno.id).startsWith("temp_")) {
+            turnosACrear.push(turno);
+          }
         }
       }
 
       // 3. Ejecutar operaciones
       for (const t of turnosAEliminar) {
-        await class_times.delete(t.id);
+        // Solo eliminar turnos con ID numérico válido (no temporal)
+        if (t.id && !String(t.id).startsWith("temp_")) {
+          await class_times.delete(t.id);
+        }
       }
       // --- Cambios aquí: enviar array de ids de actividades ---
       const getActsIds = (acts) => {
@@ -584,14 +592,17 @@ export function HorarioAcademico({ scheduleId }) {
         });
       }
       for (const t of turnosAActualizar) {
-        await class_times.update(t.id, {
-          day: t.day,
-          number: t.number,
-          schedule: t.schedule,
-          subject: typeof t.subject === "object" ? t.subject.id : t.subject,
-          teacher: typeof t.teacher === "object" ? t.teacher?.id : t.teacher,
-          activities: getActsIds(t.activities),
-        });
+        // Solo actualizar turnos con ID numérico válido (no temporal)
+        if (t.id && !String(t.id).startsWith("temp_")) {
+          await class_times.update(t.id, {
+            day: t.day,
+            number: t.number,
+            schedule: t.schedule,
+            subject: typeof t.subject === "object" ? t.subject.id : t.subject,
+            teacher: typeof t.teacher === "object" ? t.teacher?.id : t.teacher,
+            activities: getActsIds(t.activities),
+          });
+        }
       }
 
       // Recargar los turnos desde la base de datos para reflejar los cambios
@@ -728,10 +739,10 @@ export function HorarioAcademico({ scheduleId }) {
     if (!turno || !turno.teacher) return false;
     return allClassTimes.some(
       (t) =>
-        t.id !== turno.id &&
+        t.schedule !== turno.schedule && // Excluir el horario actual
         t.teacher === turno.teacher &&
         t.day === turno.day &&
-        t.number === turno.number // <-- Corrección aquí
+        t.number === turno.number
     );
   };
 
@@ -747,7 +758,7 @@ export function HorarioAcademico({ scheduleId }) {
     if (!turno.activities.includes(laboratorioActividadId)) return false;
     // Buscar en todos los turnos de todos los horarios (allClassTimes)
     return allClassTimes.some((otro) => {
-      if (!otro || otro.id === turno.id) return false;
+      if (!otro || otro.schedule === turno.schedule) return false; // Excluir el horario actual
       if (otro.day !== turno.day || otro.number !== turno.number) return false;
       if (!otro.activities) return false;
       return otro.activities.includes(laboratorioActividadId);

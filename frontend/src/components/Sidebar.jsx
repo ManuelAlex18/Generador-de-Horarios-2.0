@@ -111,7 +111,7 @@ export function Sidebar({ isOpen, onClose }) {
       <div className="flex h-16 items-center border-b border-[#12a6b9] px-4">
         <Link to="/" className="flex items-center gap-3 font-semibold text-white text-xl">
           <img src={logo} alt="Logo" className="h-10 w-10 rounded-lg shadow" />
-          <span>HorarioUCF</span>
+          <span>HorariosUCf</span>
         </Link>
       </div>
       <div className="flex-1 overflow-auto py-2">

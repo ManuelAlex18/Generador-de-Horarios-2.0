@@ -2,7 +2,7 @@
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -39,17 +39,18 @@ function useBreakpoint() {
   return breakpoint;
 }
 
-export default function BalanceSection({ data, updateData, onComplete }) {
+export default function BalanceSection({ data, updateData, onComplete, fromEdit = false }) {
   const weeks = data.basicInfo?.weeks || 14;
   const subjects = data.basicInfo?.subjectObjects || [];
   const timeSettings = data.timeSettings || {};
 
   const [balanceData, setBalanceData] = useState({
-    balanceValue: 50,
-    weeklyBalance: Array(weeks).fill(36),
+    balanceValue: data.balance?.balanceValue || 50,
+    weeklyBalance: data.balance?.weeklyBalance || Array(weeks).fill(36),
   });
 
   const [autoFillValue, setAutoFillValue] = useState(36);
+  const hasCalculatedRef = useRef(!!data.balance?.weeklyBalance || fromEdit);
 
   const navigate = useNavigate();
 
@@ -72,84 +73,95 @@ export default function BalanceSection({ data, updateData, onComplete }) {
     e.target.blur();
   };
 
+  const performCalculation = async () => {
+    if (
+      !data.basicInfo?.period ||
+      !data.basicInfo?.career ||
+      !data.basicInfo?.year ||
+      !data.basicInfo?.subjects ||
+      subjects.length === 0
+    ) {
+      return;
+    }
+
+    const formData = {
+      subjectsSymbology: subjects.map((subject) => subject.symbology),
+      weeksCount: weeks,
+      encountersList: subjects.map(
+        (subject) => timeSettings[subject.id]?.encounters || 0
+      ),
+      timeBaseList: subjects.map(
+        (subject) => timeSettings[subject.id]?.timeBase || 0
+      ),
+      activitiesList: subjects.map((subject) => {
+        const activities = timeSettings[subject.id]?.activitiesPerEncounter || [];
+        return activities;
+      }),
+      aboveList: subjects.map((subject) => {
+        const above = timeSettings[subject.id]?.weeklyDistribution?.above || [];
+        return above;
+      }),
+      belowList: subjects.map((subject) => {
+        const below = timeSettings[subject.id]?.weeklyDistribution?.below || [];
+        return below;
+      }),
+      periodId: data.basicInfo?.period || null,
+      careerId: data.basicInfo?.career || null,
+      yearId: data.basicInfo?.year || null,
+      subjectIds: data.basicInfo?.subjects || [],
+    };
+
+    try {
+      const periodResp = await periodsApi.get(data.basicInfo.period);
+      const daysNotAvailableByWeek = periodResp.data.days_not_available_by_week || [];
+      const opciones_turnos = [1, 2, 3, 4, 5, 6];
+      let turnos_por_dia = 3;
+      const dias_por_semana = 5;
+      const horas_por_turno = 2;
+      const fondo_horas = formData.timeBaseList;
+      const turnos_asignaturas = fondo_horas.map((ele) => Math.floor(ele / 2));
+      const fondo_Total_asignaturas = turnos_asignaturas.reduce((a, b) => a + b, 0) * 2;
+      let t = 1;
+      for (let i = 0; i < opciones_turnos.length; i++) {
+        const capacidad =
+          opciones_turnos[i] *
+            dias_por_semana *
+            horas_por_turno *
+            weeks -
+          daysNotAvailableByWeek.length * 2 * opciones_turnos[i];
+        if (capacidad >= fondo_Total_asignaturas) {
+          turnos_por_dia = opciones_turnos[i];
+          t = opciones_turnos[i];
+          break;
+        }
+      }
+      let turnos_por_semana = Array(weeks).fill(turnos_por_dia * dias_por_semana * 2);
+      daysNotAvailableByWeek.forEach((semana_info) => {
+        const semana_dic = semana_info.numero_semana;
+        if (semana_dic - 1 >= 0 && semana_dic - 1 < turnos_por_semana.length) {
+          turnos_por_semana[semana_dic - 1] -= turnos_por_dia * 2;
+        }
+      });
+      const newBalanceData = {
+        balanceValue: 50,
+        weeklyBalance: turnos_por_semana,
+      };
+      setBalanceData(newBalanceData);
+      setAutoFillValue(turnos_por_dia * dias_por_semana * 2);
+      hasCalculatedRef.current = true;
+      updateData(newBalanceData);
+    } catch (error) {
+      console.error("No se pudo precargar los valores máximos de horas por semana:", error);
+    }
+  };
+
   useEffect(() => {
     async function fetchMaxWeeklyHours() {
-      if (
-        !data.basicInfo?.period ||
-        !data.basicInfo?.career ||
-        !data.basicInfo?.year ||
-        !data.basicInfo?.subjects ||
-        subjects.length === 0
-      ) {
+      // Solo calcular si no se ha hecho antes
+      if (hasCalculatedRef.current) {
         return;
       }
-
-      const formData = {
-        subjectsSymbology: subjects.map((subject) => subject.symbology),
-        weeksCount: weeks,
-        encountersList: subjects.map(
-          (subject) => timeSettings[subject.id]?.encounters || 0
-        ),
-        timeBaseList: subjects.map(
-          (subject) => timeSettings[subject.id]?.timeBase || 0
-        ),
-        activitiesList: subjects.map((subject) => {
-          const activities = timeSettings[subject.id]?.activitiesPerEncounter || [];
-          return activities;
-        }),
-        aboveList: subjects.map((subject) => {
-          const above = timeSettings[subject.id]?.weeklyDistribution?.above || [];
-          return above;
-        }),
-        belowList: subjects.map((subject) => {
-          const below = timeSettings[subject.id]?.weeklyDistribution?.below || [];
-          return below;
-        }),
-        periodId: data.basicInfo?.period || null,
-        careerId: data.basicInfo?.career || null,
-        yearId: data.basicInfo?.year || null,
-        subjectIds: data.basicInfo?.subjects || [],
-      };
-
-      try {
-        const periodResp = await periodsApi.get(data.basicInfo.period);
-        const daysNotAvailableByWeek = periodResp.data.days_not_available_by_week || [];
-        const opciones_turnos = [1, 2, 3, 4, 5, 6];
-        let turnos_por_dia = 3;
-        const dias_por_semana = 5;
-        const horas_por_turno = 2;
-        const fondo_horas = formData.timeBaseList;
-        const turnos_asignaturas = fondo_horas.map((ele) => Math.floor(ele / 2));
-        const fondo_Total_asignaturas = turnos_asignaturas.reduce((a, b) => a + b, 0) * 2;
-        let t = 1;
-        for (let i = 0; i < opciones_turnos.length; i++) {
-          const capacidad =
-            opciones_turnos[i] *
-              dias_por_semana *
-              horas_por_turno *
-              weeks -
-            daysNotAvailableByWeek.length * 2 * opciones_turnos[i];
-          if (capacidad >= fondo_Total_asignaturas) {
-            turnos_por_dia = opciones_turnos[i];
-            t = opciones_turnos[i];
-            break;
-          }
-        }
-        let turnos_por_semana = Array(weeks).fill(turnos_por_dia * dias_por_semana * 2);
-        daysNotAvailableByWeek.forEach((semana_info) => {
-          const semana_dic = semana_info.numero_semana;
-          if (semana_dic - 1 >= 0 && semana_dic - 1 < turnos_por_semana.length) {
-            turnos_por_semana[semana_dic - 1] -= turnos_por_dia * 2;
-          }
-        });
-        setBalanceData((prev) => ({
-          ...prev,
-          weeklyBalance: turnos_por_semana,
-        }));
-        setAutoFillValue(turnos_por_dia * dias_por_semana * 2);
-      } catch (error) {
-        console.error("No se pudo precargar los valores máximos de horas por semana:", error);
-      }
+      await performCalculation();
     }
     fetchMaxWeeklyHours();
   }, [data.basicInfo?.period, data.basicInfo?.career, data.basicInfo?.year, data.basicInfo?.subjects, weeks, subjects.length]);
@@ -168,22 +180,26 @@ export default function BalanceSection({ data, updateData, onComplete }) {
   const [errors, setErrors] = useState({});
 
   const handleChange = (field, value) => {
-    setBalanceData((prev) => ({
-      ...prev,
+    const newData = {
+      ...balanceData,
       [field]: Number.parseInt(value) || 0,
-    }));
+    };
+    setBalanceData(newData);
+    updateData(newData);
   };
 
   const handleWeeklyBalanceChange = (index, value) => {
     if (value > 99) {
       value = 99;
     }
-    setBalanceData((prev) => ({
-      ...prev,
-      weeklyBalance: prev.weeklyBalance.map((v, i) =>
+    const newData = {
+      ...balanceData,
+      weeklyBalance: balanceData.weeklyBalance.map((v, i) =>
         i === index ? Number.parseInt(value) || 0 : v
       ),
-    }));
+    };
+    setBalanceData(newData);
+    updateData(newData);
   };
 
   const applyMaxLoadToAll = () => {
@@ -279,10 +295,12 @@ export default function BalanceSection({ data, updateData, onComplete }) {
   };
 
   const handleAutoFill = () => {
-    setBalanceData((prev) => ({
-      ...prev,
+    const newData = {
+      ...balanceData,
       weeklyBalance: Array(weeks).fill(autoFillValue),
-    }));
+    };
+    setBalanceData(newData);
+    updateData(newData);
   };
 
   return (
@@ -327,6 +345,9 @@ export default function BalanceSection({ data, updateData, onComplete }) {
                 />
                 <Button onClick={handleAutoFill} size="sm" className="bg-[#12a6b9] hover:bg-[#0e8a9c] text-white">
                   Auto Llenar
+                </Button>
+                <Button onClick={performCalculation} size="sm" className="bg-[#006599] hover:bg-[#005080] text-white">
+                  Autocalcular
                 </Button>
               </div>
             </div>

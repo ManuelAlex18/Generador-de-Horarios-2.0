@@ -44,6 +44,7 @@ export default function BasicInfoSection({ data, updateData, onComplete, fromMap
   const [periodLoading, setPeriodLoading] = useState(false);
   const classRoomSelectorRef = useRef(null);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const periodWeeksCalculated = useRef(false);
 
   useEffect(() => {
     facultiesApi
@@ -169,6 +170,24 @@ export default function BasicInfoSection({ data, updateData, onComplete, fromMap
       setInitialDataLoaded(true);
     }
   }, [data, fromMapaHorarios, initialDataLoaded]);
+
+  // Calcular semanas automáticamente cuando el período viene precargado desde mapa-horarios
+  useEffect(() => {
+    if (
+      fromMapaHorarios && 
+      localData.period && 
+      periods.length > 0 && 
+      !periodWeeksCalculated.current &&
+      !periodLoading
+    ) {
+      // Verificar que el período existe en la lista de períodos cargados
+      const periodExists = periods.some(p => p.id === localData.period);
+      if (periodExists) {
+        periodWeeksCalculated.current = true;
+        handlePeriodChange(localData.period);
+      }
+    }
+  }, [localData.period, periods, fromMapaHorarios, periodLoading]);
 
   const handleChange = (field, value) => {
     // Aplicar restricciones a los valores

@@ -43,7 +43,7 @@ export function ContactPage() {
           <Link to="/inicio" className="inline-block mb-6 hover:scale-110 transition-transform duration-300">
             <img
               src={logo}
-              alt="Logo HorarioUCF"
+              alt="Logo HorariosUCf"
               className="mx-auto h-24 w-24 rounded-xl shadow-2xl"
               style={{ objectFit: "contain" }}
             />

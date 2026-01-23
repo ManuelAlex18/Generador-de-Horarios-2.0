@@ -34,12 +34,16 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      try {
-        const refreshToken = localStorage.getItem("refresh");
-        if (!refreshToken) {
-          throw new Error("No refresh token available");
-        }
+      const refreshToken = localStorage.getItem("refresh");
+      
+      // Si NO hay refresh token, significa que el usuario NO está autenticado
+      // En vez de redirigir a login, simplemente rechazar el error
+      // Esto permite que usuarios sin login puedan ver contenido público
+      if (!refreshToken) {
+        return Promise.reject(error);
+      }
 
+      try {
         // Intentar refrescar el token
         const response = await axios.post(`${API_BASE_URL}/tasks/api/token/refresh/`, {
           refresh: refreshToken,
@@ -52,7 +56,8 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // Si falla el refresh, redirigir al login
+        // Si falla el refresh, el usuario tenía sesión pero expiró
+        // SOLO en este caso redirigir a login
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
         window.location.href = "/login";

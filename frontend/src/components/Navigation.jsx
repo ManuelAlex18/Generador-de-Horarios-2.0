@@ -57,11 +57,11 @@ export function Navigation() {
             <div className="flex items-center gap-1.5 md:gap-2">
               <img
                 src={logo}
-                alt="Logo HorarioUCF"
+                alt="Logo HorariosUCf"
                 className="h-8 w-8 md:h-10 md:w-10 object-contain bg-white rounded-xl flex-shrink-0"
               />
               <h1 className="font-bold text-lg md:text-2xl lg:text-3xl mb-0 text-white tracking-wide select-none truncate">
-                HorarioUCF
+                HorariosUCf
               </h1>
             </div>
           </Link>
@@ -99,26 +99,15 @@ export function Navigation() {
                     Cerrar Sesión
                   </button>
                 ) : (
-                  <>
-                    <button
-                      className="w-full text-left px-4 py-2 text-[#006599] hover:bg-[#e3f6fa] font-semibold transition-all duration-150"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        navigate("/login");
-                      }}
-                    >
-                      Iniciar Sesión
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-[#006599] hover:bg-[#e3f6fa] font-semibold transition-all duration-150"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        navigate("/register");
-                      }}
-                    >
-                      Registrarse
-                    </button>
-                  </>
+                  <button
+                    className="w-full text-left px-4 py-2 text-[#006599] hover:bg-[#e3f6fa] font-semibold transition-all duration-150"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      navigate("/login");
+                    }}
+                  >
+                    Iniciar Sesión
+                  </button>
                 )}
               </div>
             )}

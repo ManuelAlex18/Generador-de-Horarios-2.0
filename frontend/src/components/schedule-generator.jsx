@@ -9,6 +9,7 @@ import TimeSettingsSection from "@/components/time-settings-section";
 import BalanceSection from "@/components/balance-section";
 import { Button } from "@/components/ui/button";
 import { Check, Info, Clock, Scale } from "lucide-react";
+import { subjectsApi } from "../api/tasks.api";
 
 export default function ScheduleGenerator() {
 	const location = useLocation();
@@ -40,6 +41,58 @@ export default function ScheduleGenerator() {
 			balanceItems: Array(14).fill(36),
 		},
 	});
+
+	// Cargar datos de edición si viene desde mapa-horarios con editData
+	useEffect(() => {
+		const loadEditData = async () => {
+			if (location.state?.editData) {
+				const editData = location.state.editData;
+				
+				// Cargar objetos de asignaturas desde la API
+				let subjectObjects = [];
+				if (editData.subjects && editData.subjects.length > 0) {
+					try {
+						const subjectsResponse = await subjectsApi.getAll();
+						subjectObjects = subjectsResponse.data.filter(s => editData.subjects.includes(s.id));
+					} catch (error) {
+						console.error("Error cargando asignaturas:", error);
+					}
+				}
+				
+				setFormData({
+					basicInfo: {
+						faculty: editData.faculty,
+						career: editData.career,
+						year: editData.year,
+						semester: 1,
+						courseId: editData.courseId,
+						courseName: "",
+						period: editData.period,
+						weeks: 14,
+						subjects: editData.subjects,
+						subjectObjects: subjectObjects,
+						group: editData.group,
+						class_room: editData.class_room,
+					},
+					timeSettings: editData.timeSettings || {},
+					balance: {
+						maxLoad: 36,
+						balanceValue: 100,
+						balanceItems: Array(14).fill(36),
+					},
+				});
+				
+				// Desbloquear todas las secciones para modo edición
+				setCompletedSections({
+					"basic-info": true,
+					"time-settings": true,
+					balance: false,
+				});
+			}
+		};
+		
+		loadEditData();
+	}, [location.state?.editData]);
 
 	// Cargar datos de la jerarquía si viene desde mapa-horarios
 	useEffect(() => {
@@ -164,7 +217,10 @@ export default function ScheduleGenerator() {
 								data={formData.basicInfo}
 								updateData={(data) => updateFormData("basicInfo", data)}
 								onComplete={() => completeSection("basic-info")}
-								fromMapaHorarios={location.state?.hierarchyData?.fromMapaHorarios || false}
+								fromMapaHorarios={
+									(location.state?.hierarchyData?.fromMapaHorarios || 
+									location.state?.editData?.fromEdit) || false
+								}
 							/>
 						</TabsContent>
 

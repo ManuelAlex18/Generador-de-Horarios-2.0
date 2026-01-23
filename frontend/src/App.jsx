@@ -36,22 +36,34 @@ import { RoomForm } from "./components/room-form";
 import { EditRoom } from "./components/edit-room";
 
 function PrivateRoute({ children, requireRole = false }) {
-  const isAuth = !!localStorage.getItem("access");
-  let hasRole = false;
-  if (isAuth && requireRole) {
-    try {
-      const token = localStorage.getItem("access");
-      const decoded = jwtDecode(token);
-      if (decoded.groups && decoded.groups.length > 0) {
-        const userRole = decoded.groups[0];
-        hasRole = userRole && userRole !== "user";
-      }
-    } catch {
-      hasRole = false;
-    }
+  // Si NO requiere rol, permitir acceso sin autenticación
+  if (!requireRole) {
+    return children;
   }
-  if (!isAuth) return <Navigate to="/login" replace />;
-  if (requireRole && !hasRole) return <Navigate to="/inicio" replace />;
+  
+  // Si requiere rol, entonces SÍ verificar autenticación
+  const isAuth = !!localStorage.getItem("access");
+  if (!isAuth) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Verificar que tenga un rol especial (no "user")
+  let hasRole = false;
+  try {
+    const token = localStorage.getItem("access");
+    const decoded = jwtDecode(token);
+    if (decoded.groups && decoded.groups.length > 0) {
+      const userRole = decoded.groups[0];
+      hasRole = userRole && userRole !== "user";
+    }
+  } catch {
+    hasRole = false;
+  }
+  
+  if (!hasRole) {
+    return <Navigate to="/inicio" replace />;
+  }
+  
   return children;
 }
 

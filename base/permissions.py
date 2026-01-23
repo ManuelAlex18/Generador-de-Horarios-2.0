@@ -14,12 +14,18 @@ class IsPlannerUser(BasePermission):
 # Permiso: solo lectura para usuarios comunes, acceso total para admin/planificador
 class ReadOnlyOrAdminOrPlanner(BasePermission):
     def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
+        # Permitir solo lectura para todos los usuarios
         if request.method in SAFE_METHODS:
             return True
+        
+        # Para crear/modificar/eliminar, requiere autenticación
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Solo admin/planificador pueden crear/modificar/eliminar
         if request.user.groups.filter(name__in=['administrador', 'planificador']).exists():
             return True
+        
         return False
 
 # Función para crear los grupos si no existen (llamar desde ready() en apps.py)

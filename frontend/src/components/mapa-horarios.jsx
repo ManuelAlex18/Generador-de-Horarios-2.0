@@ -10,8 +10,11 @@ import {
   coursesApi,
   yearsApi,
   periodsApi,
-
-  schedulesApi, // <-- Agrega schedulesApi aquí
+  schedulesApi,
+  subjectsApi,
+  class_times,
+  activitysApi,
+  load_balancesApi,
 } from "../api/tasks.api";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
@@ -231,6 +234,97 @@ export function MapaHorarios() {
       navigate(`/calendario/${item.id}`);
       return;
     }
+    // --------- EDITAR HORARIO ---------
+    if (level === "horarios" && action === "editar") {
+      try {
+        // Obtener detalles completos del horario
+        const scheduleResponse = await schedulesApi.get(item.id);
+        const scheduleData = scheduleResponse.data;
+        
+        // Obtener class_times para este horario
+        const classTimesResponse = await class_times.getAll();
+        const scheduleClassTimes = classTimesResponse.data.filter(ct => ct.schedule === item.id);
+        
+        // Obtener todas las actividades para mapear IDs a symbology
+        const activitiesResponse = await activitysApi.getAll();
+        const activitiesMap = {};
+        activitiesResponse.data.forEach(act => {
+          activitiesMap[act.id] = act.symbology.toString();
+        });
+        
+        // Procesar asignaturas y sus encuentros/actividades
+        const subjectsMap = {};
+        const timeSettings = {};
+        
+        for (const ct of scheduleClassTimes) {
+          const subjectId = ct.subject;
+          if (!subjectsMap[subjectId]) {
+            subjectsMap[subjectId] = {
+              encounters: [],
+              activitiesPerEncounter: []
+            };
+          }
+          
+          // Agregar un encuentro con sus actividades (convertir IDs a symbology y unir con comas)
+          subjectsMap[subjectId].encounters.push(ct.id);
+          const activitiesSymbology = (ct.activities || []).map(actId => activitiesMap[actId]);
+          const activitiesString = activitiesSymbology.join(','); // Convertir array a string separado por comas
+          subjectsMap[subjectId].activitiesPerEncounter.push(activitiesString);
+        }
+        
+        // Construir timeSettings con la estructura completa que espera TimeSettingsSection
+        Object.keys(subjectsMap).forEach(subjectId => {
+          const numEncounters = subjectsMap[subjectId].encounters.length;
+          timeSettings[subjectId] = {
+            timeBase: 80,
+            encounters: numEncounters,
+            hoursPerEncounter: Array(numEncounters).fill(2),
+            activitiesPerEncounter: subjectsMap[subjectId].activitiesPerEncounter,
+            weeklyDistribution: {
+              above: Array(scheduleData.weeks || 14).fill(6),
+              below: Array(scheduleData.weeks || 14).fill(0),
+            }
+          };
+        });
+        
+        // Cargar balance del horario
+        let balanceData = null;
+        try {
+          const loadBalancesResponse = await load_balancesApi.getAll();
+          const scheduleBalance = loadBalancesResponse.data.find(lb => lb.schedule === item.id);
+          if (scheduleBalance && scheduleBalance.balance) {
+            balanceData = {
+              balanceValue: 50,
+              weeklyBalance: scheduleBalance.balance
+            };
+          }
+        } catch (error) {
+          console.error("Error cargando balance del horario:", error);
+        }
+        
+        // Navegar a /schedule con datos del horario
+        const editData = {
+          scheduleId: item.id,
+          faculty: scheduleData.faculty || selectedPath.facultad?.id,
+          career: scheduleData.career || selectedPath.carrera?.id,
+          year: scheduleData.year || selectedPath.año?.id,
+          courseId: scheduleData.course || selectedPath.curso?.id,
+          period: scheduleData.period || selectedPath.periodo?.id,
+          subjects: scheduleData.subjects || [],
+          group: scheduleData.group || "",
+          class_room: scheduleData.class_room || "",
+          timeSettings: timeSettings,
+          balance: balanceData,
+          fromEdit: true
+        };
+        
+        navigate("/schedule", { state: { from: window.location.pathname, editData } });
+      } catch (error) {
+        console.error("Error al cargar datos del horario:", error);
+        alert("Error al cargar los datos del horario para editar.");
+      }
+      return;
+    }
     // --------- ELIMINAR HORARIO ---------
     if (level === "horarios" && action === "eliminar") {
       if (window.confirm(`¿Está seguro que desea eliminar el horario "${item.to_string || item.__str__ || item.name || item.nombre}"? Esta acción no se puede deshacer.`)) {
@@ -444,21 +538,19 @@ export function MapaHorarios() {
 
   const ActionButtons = ({ item, currentLevel }) => (
     <div className="flex gap-1 sm:gap-2">
-      {/* Solo mostrar editar/eliminar si tiene rol */}
-      {hasRole && currentLevel !== "horarios" && (
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAction("editar", item, currentLevel);
-            }}
-            className="h-8 w-8 p-0 hover:bg-amber-50 hover:border-amber-300"
-          >
-            <Edit className="h-4 w-4 text-amber-600" />
-          </Button>
-        </>
+      {/* Editar - disponible si tiene rol */}
+      {hasRole && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAction("editar", item, currentLevel);
+          }}
+          className="h-8 w-8 p-0 hover:bg-amber-50 hover:border-amber-300"
+        >
+          <Edit className="h-4 w-4 text-amber-600" />
+        </Button>
       )}
       {/* Eliminar solo si tiene rol */}
       {hasRole && (
